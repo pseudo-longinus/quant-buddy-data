@@ -16,25 +16,15 @@
 
 ## 3 秒快速安装
 
-Claude Code：
+如果你熟悉 Agent 工具（Claude Code、Cursor、OpenClaw 等），可以直接对 AI Agent 说：
+
+> 帮我安装这个 skill：
 
 ```bash
 npx skills add pseudo-longinus/quant-buddy-data -g -a claude-code -s quant-buddy-skill -y
 ```
 
-Cursor：
-
-```bash
-npx skills add pseudo-longinus/quant-buddy-data -g -a cursor -s quant-buddy-skill -y
-```
-
-OpenClaw：
-
-```bash
-npx skills add pseudo-longinus/quant-buddy-data -g -a openclaw -s quant-buddy-skill -y
-```
-
-Windows 遇到 symlink 或权限问题时，在命令末尾追加 `--copy`。
+如果你不懂如何使用 Agent 和 skill，可以按照[小白图文教程](https://tcn8bvcbyokw.feishu.cn/wiki/E1zswck3oiiJjJkP07QcmSG3nle?from=from_copylink)一步步展开。
 
 ## 你可以这样问
 
