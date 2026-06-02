@@ -3,7 +3,7 @@
 [中文](README.md) | [English](README.en.md)
 
 <p align="center">
-  <img src="assets/banner.jpg" alt="quant-buddy-data" width="100%" />
+  <img src="assets/banner2.jpg" alt="quant-buddy-data" width="100%" />
 </p>
 
 让 Claude Code、Cursor、Codex、GitHub Copilot、Windsurf 等 AI Agent 直接查询 A 股、港股、美股行情、估值、财务数据和历史序列。
