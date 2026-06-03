@@ -70,7 +70,7 @@ The agent turns your natural-language request into quant-buddy platform queries 
 | Recent N-day series | Single asset or explicit asset lists | 5-day, 20-day, 60-day prices and returns |
 | Fixed-period comparison | Multi-asset return comparison | Cumulative return from one date to another |
 | CSV export | Query results and history series | Save locally for spreadsheets or downstream analysis |
-| Macro one-dimensional series | GDP, CPI, PPI, PMI, M1/M2, social financing, credit, FX reserves, Treasury yields, LPR, OMO, USD/CNH, industrial output, retail sales, trade | Match exact `index_short_title` names such as `中国GDP当季同比`, `中国CPI同比`, `中国PPI同比`, `中采PMI`, `中国新增社融`, and `USDCNH`, then read with `readData` |
+| Macro data | GDP, CPI, PPI, PMI, M1/M2, social financing, credit, FX reserves, Treasury yields, LPR, OMO, USD/CNH, industrial output, retail sales, trade | Search with `confirmDataMulti` to find the data name, such as `中国GDP当季同比`, `中国CPI同比`, `中国PPI同比`, `中采PMI`, `中国新增社融`, and `USDCNH`, then read with `readData` |
 | Advanced computation | Mainly A-shares | Formulas, full-market screening, factors, backtests, charts |
 
 ## Why Not Just Another Data API
@@ -146,7 +146,7 @@ Backtest a low PE + high ROE portfolio and compare it with CSI 300.
 | Hong Kong stocks | Supported | Partially supported, depending on API response | Partially supported, depending on API response | Data lookup first |
 | US stocks | Supported | Partially supported, depending on API response | Partially supported, depending on API response | Data lookup first |
 | Major indices | Supported | Partially supported | - | Can be used as benchmarks or comparison assets |
-| Macro one-dimensional series | Supported via `confirmDataMulti` + `readData` | - | - | Use `index_short_title` names from the reference list, for example `中国GDP当季同比`, `中国CPI同比`, `中国PPI同比`, `中采PMI`, `中国M1同比`, `中国M2同比`, `中国新增社融`, `中国新增人民币贷款`, `中国外汇储备`, `中国10年国债收益`, `中国1年期LPR`, `中国7天逆回购利率`, and `USDCNH` |
+| Macro data | Supported via `confirmDataMulti` + `readData` | - | - | Search with `confirmDataMulti` to find the data name, for example `中国GDP当季同比`, `中国CPI同比`, `中国PPI同比`, `中采PMI`, `中国M1同比`, `中国M2同比`, `中国新增社融`, `中国新增人民币贷款`, `中国外汇储备`, `中国10年国债收益`, `中国1年期LPR`, `中国7天逆回购利率`, and `USDCNH` |
 
 ## Installation
 
