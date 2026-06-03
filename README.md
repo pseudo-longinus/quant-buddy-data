@@ -1,7 +1,7 @@
 # quant-buddy-data
 
 <p align="center">
-  <img src="assets/banner3.jpg" alt="quant-buddy-data" width="100%" />
+  <img src="assets/banner4.jpg" alt="quant-buddy-data" width="100%" />
 </p>
 
 <p align="center">

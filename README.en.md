@@ -3,7 +3,7 @@
 [中文](README.md) | [English](README.en.md)
 
 <p align="center">
-  <img src="assets/banner3.jpg" alt="quant-buddy-data" width="100%" />
+  <img src="assets/banner4.jpg" alt="quant-buddy-data" width="100%" />
 </p>
 
 Let Claude Code, Cursor, Codex, GitHub Copilot, Windsurf, and other AI agents query A-share, Hong Kong, and US stock market data, valuation data, and financial data directly.
