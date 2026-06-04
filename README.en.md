@@ -65,8 +65,10 @@ The agent turns your natural-language request into quant-buddy platform queries 
 | Capability | Coverage | Examples |
 |---|---|---|
 | Latest market data | A-shares / HK stocks / US stocks / indices | Latest price, close, return, turnover, volume |
-| Valuation data | Mainly A-shares; some HK/US fields depending on API support | PE, PB, PS, dividend yield, market cap |
-| Financial data | Mainly A-shares; some HK/US fields depending on API support | Revenue, net profit, ROE, total assets, debt ratio |
+| Valuation data | PE/PE_TTM/PB/PS_TTM/dividend yield/PCF across A/HK/US; market cap, float cap, turnover are A-shares only | PE, PB, PS, dividend yield, market cap |
+| Financial data | A/HK/US supported (single-quarter); some fields depend on API response | Revenue, net profit, ROE, total assets, debt ratio |
+| Money flow / North-South holdings | Main-force net flow & buckets and northbound holdings are A-shares only; southbound holdings are HK only | Main-force / super-large / large / medium / small net flow, northbound & southbound holdings |
+| Commodity futures | A-share futures only (~60 products), unit varies by product | Futures OHLC, spot price, inventory |
 | Recent N-day series | Single asset or explicit asset lists | 5-day, 20-day, 60-day prices and returns |
 | Fixed-period comparison | Multi-asset return comparison | Cumulative return from one date to another |
 | CSV export | Query results and history series | Save locally for spreadsheets or downstream analysis |
@@ -146,7 +148,10 @@ Backtest a low PE + high ROE portfolio and compare it with CSI 300.
 | Hong Kong stocks | Supported | Partially supported, depending on API response | Partially supported, depending on API response | Data lookup first |
 | US stocks | Supported | Partially supported, depending on API response | Partially supported, depending on API response | Data lookup first |
 | Major indices | Supported | Partially supported | - | Can be used as benchmarks or comparison assets |
+| Commodity futures | Futures OHLC, spot price, inventory (~60 A-share futures products, unit by product) | - | - | A-share futures only; valuation/financials/K-line not covered |
 | Macro data | Supported via `confirmDataMulti` + `readData` | - | - | Search with `confirmDataMulti` to find the data name, for example `中国GDP当季同比`, `中国CPI同比`, `中国PPI同比`, `中采PMI`, `中国M1同比`, `中国M2同比`, `中国新增社融`, `中国新增人民币贷款`, `中国外汇储备`, `中国10年国债收益`, `中国1年期LPR`, `中国7天逆回购利率`, and `USDCNH` |
+
+**Common limits**: up to 1,000 assets per request, window series up to 2,500 trading days (~10 years), history back to 2005-01-04, up to 200,000 data points per request; daily caps of 1,000,000 data points and 50 CSV downloads. Results over 500 data points automatically switch to CSV download links. A-share main-force/northbound money flow and southbound holdings are queried with `snapshot`/`window` (not `report`).
 
 ## Installation
 
