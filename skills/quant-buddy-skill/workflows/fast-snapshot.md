@@ -30,7 +30,7 @@
 
 ## ① 字段映射表（fields 参数写法）
 
-> ⚠️ 估值字段市场范围：**PE/PE_TTM/PB/PS_TTM/股息率/PCF** 支持 A/US/HK（TTM〔估值数据〕，日频，港美股自动映射）；**总市值、流通市值、换手率** 仅 A 股（港美股查询返回 FIELD_MARKET_MISMATCH）。
+> ⚠️ 估值字段市场范围：**PE/PE_TTM/PB/PS_TTM/股息率/PCF** 支持 A/US/HK（TTM〔估值数据〕，日频，港美股自动映射）；**总市值** 支持 A/US/HK；**流通市值、换手率** 仅 A 股。
 
 | 用户描述的字段 | 传入 fields 的写法 | 返回 unit | 备注 |
 |---|---|---|---|
@@ -44,7 +44,7 @@
 | PE / 市盈率TTM / PE_TTM | `PE_TTM` | 倍 | A/US/HK |
 | PB / 市净率 | `PB` | 倍 | A/US/HK |
 | 市销率 / PS_TTM | `PS_TTM` | 倍 | A/US/HK |
-| 总市值 / 市值 | `总市值` | 亿元 | 仅 A 股 |
+| 总市值 / 市值 | `总市值` | 亿元 | A/US/HK |
 | 流通市值 | `流通市值` | 亿元 | 仅 A 股 |
 | 换手率 / turnover | `换手率` | % | 仅 A 股 |
 | 股息率 / dividend | `股息率` | % | A/US/HK |
@@ -181,7 +181,7 @@
 | Layer 1（MISSING_START_DATE / INVALID_DATE_RANGE / INVALID_RESULT_MODE / DATE_RANGE_WINDOW_CONFLICT） | 退出 fast path → `global-rules.md` → `quick-snapshot.md` 或完整链路 |
 | Layer 1（任何其他 code） | 退出 fast path → `global-rules.md` → `quick-snapshot.md` |
 | Layer 2（ASSET_NOT_FOUND） | 告知用户该资产未识别；其余资产结果正常输出 |
-| Layer 3（FIELD_MARKET_MISMATCH） | 告知用户该字段仅支持 A 股（如总市值/流通市值/换手率） |
+| Layer 3（FIELD_MARKET_MISMATCH） | 告知用户该字段仅支持 A 股（如流通市值/换手率/ROE） |
 | Layer 3（FIELD_UNRESOLVABLE） | 告知用户字段不在支持范围，其余字段正常输出 |
 | Layer 4（DATA_UNAVAILABLE） | **立即退出 fast path → 完整链路**；禁止重试 fast_query，禁止 confirmDataMulti 换字段名后再重试 |
 | HTTP 500 / 任何网络错误 | **立即退出 fast path → 完整链路**；禁止重试同一接口 |
