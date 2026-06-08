@@ -356,7 +356,7 @@ For data-query examples, integration questions, and AI agent workflows, scan the
         <sub>Personal WeChat</sub>
       </td>
       <td align="center">
-        <img src="assets/wechat_group_qr6.jpg" width="180" alt="WeChat group QR code" />
+        <img src="assets/wechat_group_qr7.jpg" width="180" alt="WeChat group QR code" />
         <br/>
         <sub>WeChat Group</sub>
       </td>
