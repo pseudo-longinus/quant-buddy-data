@@ -288,6 +288,105 @@ curl -X POST "https://www.quantbuddy.cn/skill/fastQuery" \
 
 ---
 
+## 进阶：公式任务包（注册公式 → 对外取数，无需 API Key）
+
+`fast_query` 解决「我自己要一份数据」；**公式任务包（Formula Package）**解决「我把一组算好的指标定下来，让一个网页/看板/第三方反复来取最新值」。
+
+你只需把一批公式注册一次，拿到一对凭证（`package_id` + `signature`）；之后任何页面或程序凭这对凭证就能取到**永远最新**的结果——底层数据一更新，服务端自动重算，你不用重跑公式、不用搭后端、也不用把 API Key 放进前端。
+
+**典型场景**
+
+- **自己做日报 / 数据看板**：把每天要看的指标（涨跌幅、估值分位、资金流向、自定义因子打分……）写成一批公式注册成一个包，用一个静态 HTML 页面 `fetch` 取数渲染。每天打开页面就是当日最新数据，**无需后端、无需每天手动跑公式**。
+- **给团队 / 客户一个只读数据页**：发出去的是 `package_id` + `signature` 凭证，而不是 API Key；对方只能取这个包里固定的产出，改不了公式、也拿不到你的账号权限。撤销随时生效。
+- **嵌进已有网站 / Notion / 飞书 / 大屏**：任何能跑 `fetch` 的地方都能直接读数渲染，把 quant-buddy 的数据接进你自己的页面。
+- **第三方 / 轻量集成**：把一个算好的指标包交给合作方只读对接，计费始终走你（包所有者）的配额，对方零配置接入。
+
+两段式用法：
+
+1. **注册**（需 API Key）：提交一组公式和每个产出的读取模式，服务端执行校验后返回 `package_id` + `signature`。
+2. **取数**（**无需 API Key**）：凭 `package_id` + `signature` 拉数据，结果以 SSE 流式返回。底层数据更新后服务端会**自动重算**，取数永远拿最新结果，绝不返回过期数据。
+
+> `signature` 是访问凭证，仅在注册响应里**明文返回一次**，请妥善保存（脚本会自动落盘到 `output/formula_packages/<package_id>.json`）。取数方无需 API Key，费用计入**包所有者**的配额池。
+
+### 用本地脚本调用
+
+```powershell
+cd skills/quant-buddy-skill
+
+# 1. 注册：params.json 里写 formulas + reads（中文公式用 @file 传，避免编码截断）
+python scripts/formula_package.py register @params.json
+
+# 2. 取数：只需 package_id，signature 可由本地凭证自动补全
+$env:FP_PARAMS='{"package_id":"pkg_xxx"}'
+python scripts/formula_package.py query
+
+# 管理：列表 / 撤销 / 刷新（轮换签名）
+python scripts/formula_package.py list    '{"page":1,"page_size":20}'
+python scripts/formula_package.py revoke  '{"package_id":"pkg_xxx"}'
+python scripts/formula_package.py refresh '{"package_id":"pkg_xxx","rotate_signature":true}'
+```
+
+注册用的 `params.json` 示例：
+
+```json
+{
+  "formulas": [
+    "T_px = \"全市场每日收盘价\" * 1",
+    "T_ma5 = 平均(\"T_px\", 5)",
+    "T_ratio = \"T_px\" / \"T_ma5\""
+  ],
+  "reads": [
+    { "output": "T_px",    "read_mode": "range_data", "mode_params": { "start_date": 20240601, "end_date": 20240630 } },
+    { "output": "T_ratio", "read_mode": "last_day_stats" }
+  ],
+  "ttl_days": 365
+}
+```
+
+- 未列入 `reads` 的公式（如上例 `T_ma5`）只作中间变量参与计算、不对外返回。
+- 同一个包里不同产出可用**不同读取模式**：`range_data`（区间完整序列）/ `last_day_stats`（最新截面统计）/ `last_valid_per_asset`（每个资产最后一个有效值）。
+- 单包最多 100 条公式、20 个对外产出，默认有效期 365 天（注册时可用 `ttl_days` 指定）。
+
+### 前端 / 第三方直接取数（无需 API Key）
+
+下面这段就是「自己的日报页面」的核心：把它放进一个静态 HTML 里，凭凭证取数后把 `outputs` 渲染成表格 / 图表即可，每次打开都是当日最新数据。取数接口走 SSE，浏览器用 `fetch` 读流（签名放 body，不进 URL，不要用 `EventSource`）：
+
+```js
+const resp = await fetch('https://www.quantbuddy.cn/skill/queryFormulaPackage', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ package_id, signature }),
+})
+const reader = resp.body.getReader()
+const decoder = new TextDecoder()
+const outputs = {}
+let buf = ''
+for (;;) {
+  const { value, done } = await reader.read()
+  if (done) break
+  buf += decoder.decode(value, { stream: true })
+  const blocks = buf.split('\n\n'); buf = blocks.pop()
+  for (const block of blocks) {
+    const ev = (block.match(/event:\s*(.*)/) || [])[1]
+    const dt = JSON.parse((block.match(/data:\s*([\s\S]*)/) || [])[1])
+    if (ev === 'result') outputs[dt.output] = dt        // outputs["T_px"].data ...
+    else if (ev === 'error') throw new Error(`${dt.code}: ${dt.message}`)
+  }
+}
+```
+
+curl 快速验证：
+
+```bash
+curl -N -X POST https://www.quantbuddy.cn/skill/queryFormulaPackage \
+  -H 'Content-Type: application/json' \
+  -d '{"package_id":"pkg_xxx","signature":"a1b2c3..."}'
+```
+
+> 注册 / 列表 / 撤销 / 刷新需 API Key，**必须放在服务端**；只有取数接口（`queryFormulaPackage`）可暴露给浏览器。完整参数、读取模式结构与错误码见 `skills/quant-buddy-skill/tools/formula_package.md`，端到端用法见 `recipes/formula-package.md`。
+
+---
+
 ## 安全与免责声明
 
 - API Key 仅用于请求 quant-buddy 平台接口。

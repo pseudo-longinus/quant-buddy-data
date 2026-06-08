@@ -153,6 +153,103 @@ Backtest a low PE + high ROE portfolio and compare it with CSI 300.
 
 **Common limits**: up to 1,000 assets per request, window series up to 2,500 trading days (~10 years), history back to 2005-01-04, up to 200,000 data points per request; daily caps of 1,000,000 data points and 50 CSV downloads. Results over 500 data points automatically switch to CSV download links. A-share main-force/northbound money flow and southbound holdings are queried with `snapshot`/`window` (not `report`).
 
+## Formula Packages (Register Formulas → Serve Data Without an API Key)
+
+`fast_query` covers "I need data for myself." **Formula Packages** cover "I've fixed a set of metrics — now let a web page / dashboard / third party keep pulling their latest values."
+
+You register a batch of formulas once and get a pair of credentials (`package_id` + `signature`). After that, any page or program can use those credentials to fetch **always-fresh** results: whenever the underlying data updates, the server recomputes automatically. No re-running formulas, no backend to host, and no API Key in the front end.
+
+**Use cases**
+
+- **Build your own daily report / dashboard**: turn the metrics you check every day (returns, valuation percentiles, money flow, custom factor scores, …) into one package, then `fetch` and render them from a single static HTML page. Open the page and you see today's data — **no backend, no manual recompute**.
+- **Give a team / client a read-only data page**: hand out the `package_id` + `signature`, not your API Key. They can only read the outputs you fixed — they can't change the formulas or touch your account. Revoke any time.
+- **Embed into an existing site / Notion / Feishu / a wall display**: anywhere `fetch` runs, you can read and render the data directly inside your own page.
+- **Third-party / lightweight integration**: hand a precomputed metric package to a partner for read-only access; billing always stays on your (the owner's) quota, and they integrate with zero config.
+
+Two steps:
+
+1. **Register** (needs API Key): submit a set of formulas plus a read mode for each output; the server runs and validates them, then returns a `package_id` + `signature`.
+2. **Query** (**no API Key**): pull data with `package_id` + `signature`; results stream back as SSE. When the underlying data updates, the server **recomputes automatically** so a query always returns the latest result — never stale data.
+
+> The `signature` is the access credential. It is returned in plaintext **only once**, in the register response (the script also saves it to `output/formula_packages/<package_id>.json`). The query side needs no API Key; usage is billed to the **package owner**.
+
+### Call via the local script
+
+```powershell
+cd skills/quant-buddy-skill
+
+# 1. Register: put formulas + reads in params.json (pass Chinese formulas with @file to avoid encoding truncation)
+python scripts/formula_package.py register @params.json
+
+# 2. Query: only package_id is required; signature is auto-filled from the local credential
+$env:FP_PARAMS='{"package_id":"pkg_xxx"}'
+python scripts/formula_package.py query
+
+# Manage: list / revoke / refresh (rotate signature)
+python scripts/formula_package.py list    '{"page":1,"page_size":20}'
+python scripts/formula_package.py revoke  '{"package_id":"pkg_xxx"}'
+python scripts/formula_package.py refresh '{"package_id":"pkg_xxx","rotate_signature":true}'
+```
+
+Example `params.json` for registration:
+
+```json
+{
+  "formulas": [
+    "T_px = \"全市场每日收盘价\" * 1",
+    "T_ma5 = 平均(\"T_px\", 5)",
+    "T_ratio = \"T_px\" / \"T_ma5\""
+  ],
+  "reads": [
+    { "output": "T_px",    "read_mode": "range_data", "mode_params": { "start_date": 20240601, "end_date": 20240630 } },
+    { "output": "T_ratio", "read_mode": "last_day_stats" }
+  ],
+  "ttl_days": 365
+}
+```
+
+- Formulas not listed in `reads` (e.g. `T_ma5` above) are intermediate variables — computed but not exposed.
+- Different outputs in the same package can use **different read modes**: `range_data` (full series over a date range) / `last_day_stats` (latest cross-section stats) / `last_valid_per_asset` (last valid value per asset).
+- Up to 100 formulas and 20 exposed outputs per package; default validity 365 days (set `ttl_days` at registration).
+
+### Query directly from a front end / third party (no API Key)
+
+The snippet below is the core of "your own daily-report page": drop it into a static HTML file, fetch with the credentials, and render `outputs` into tables / charts — every visit shows today's latest data. The query endpoint streams SSE; in the browser, read the stream with `fetch` (signature goes in the body, never the URL; do not use `EventSource`):
+
+```js
+const resp = await fetch('https://www.quantbuddy.cn/skill/queryFormulaPackage', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ package_id, signature }),
+})
+const reader = resp.body.getReader()
+const decoder = new TextDecoder()
+const outputs = {}
+let buf = ''
+for (;;) {
+  const { value, done } = await reader.read()
+  if (done) break
+  buf += decoder.decode(value, { stream: true })
+  const blocks = buf.split('\n\n'); buf = blocks.pop()
+  for (const block of blocks) {
+    const ev = (block.match(/event:\s*(.*)/) || [])[1]
+    const dt = JSON.parse((block.match(/data:\s*([\s\S]*)/) || [])[1])
+    if (ev === 'result') outputs[dt.output] = dt        // outputs["T_px"].data ...
+    else if (ev === 'error') throw new Error(`${dt.code}: ${dt.message}`)
+  }
+}
+```
+
+Quick check with curl:
+
+```bash
+curl -N -X POST https://www.quantbuddy.cn/skill/queryFormulaPackage \
+  -H 'Content-Type: application/json' \
+  -d '{"package_id":"pkg_xxx","signature":"a1b2c3..."}'
+```
+
+> Register / list / revoke / refresh need an API Key and **must stay server-side**; only the query endpoint (`queryFormulaPackage`) is safe to expose to a browser. For full parameters, read-mode result structures, and error codes see `skills/quant-buddy-skill/tools/formula_package.md`; end-to-end usage is in `recipes/formula-package.md`.
+
 ## Installation
 
 New users should install the skill only into the AI agent they actually use. Avoid using `--all` by default.
