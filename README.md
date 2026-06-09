@@ -308,6 +308,24 @@ curl -X POST "https://www.quantbuddy.cn/skill/fastQuery" \
 
 > `signature` 是访问凭证，仅在注册响应里**明文返回一次**，请妥善保存（脚本会自动落盘到 `output/formula_packages/<package_id>.json`）。取数方无需 API Key，费用计入**包所有者**的配额池。
 
+### 它能搭出什么：两个用公式任务包做的真实页面
+
+下面两个页面都是**纯静态 HTML**——没有后端、没有数据库，只在浏览器里 `fetch` 一个公式任务包，把返回的 `outputs` 渲染成表格和图表。底层数据一更新，刷新页面就是当日最新值，**API Key 不进前端**。
+
+<p align="center">
+  <img src="assets/demo_market_bubble.png" alt="全球市场温度 / 估值泡沫看板" width="78%" />
+  <br/>
+  <sub><b>全球市场温度看板</b>　·　七大股指涨跌、全市场估值「泡沫温度」、商品与债券走势——整页数据来自一个公式任务包的单次取数。</sub>
+</p>
+
+<p align="center">
+  <img src="assets/demo_hs300_monitor.png" alt="沪深300 个股异动监控" width="78%" />
+  <br/>
+  <sub><b>沪深300 个股异动监控</b>　·　涨跌幅榜、换手 / 量能异动、个股半年价格轨迹——同样一个 <code>fetch</code> 取数渲染。</sub>
+</p>
+
+> ⚠️ 以上页面仅为公式任务包的**示例展示**，所示数字均为历史 / 示例数据，**不构成任何投资或交易建议**。
+
 ### 用本地脚本调用
 
 ```powershell
