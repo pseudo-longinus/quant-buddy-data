@@ -2,7 +2,7 @@
 name: quant-buddy-skill
 slug: quant-buddy-skill
 author: guanzhao
-version: 4.21.1
+version: 4.21.2
 description: |
   查询A股、港股、美股股票及指数的最新收盘价、开盘价、涨跌幅、成交额、成交量、换手率、PE、PB、市值等实时行情与估值数据。
   查询最近N个交易日的价格序列、日涨跌幅序列、窗口最高价、最低价、振幅等短期统计。
@@ -15,7 +15,7 @@ description: |
 runtime: python
 primaryCredential: quant-buddy API Key
 metadata:
-  version: 4.21.1
+  version: 4.21.2
   author: guanzhao
   category: quant-finance
   tags: [quant, market-data, finance, A-stock, HK-stock, US-stock, backtest, factor]
@@ -123,6 +123,9 @@ runtimeRequirements:
    - **工具返回 API Key 缺失错误**（含 `api_key 为空` 消息 / `code: 1`）：立即停止查数，输出**新用户引导消息**（格式见「前置条件」章节模板），禁止继续执行查数；等待用户粘贴 Key 后再执行配置向导。
    - **其他工具报错**（网络、服务端错误等）：直接报告"内部工具异常"，不做认证相关引导。
 7. **最终答案首句必须是数据结论**：回答用户时，第一句话必须直接给出数据结论（如资产名+数值、表格、或"符合条件的共N只"），绝对禁止以"已成功获取""数据已获取""根据返回结果""让我来"等过程性陈述开头。违反此规则 = 必须删除过程话术后重新输出。
+   - **禁止原样粘贴工具 JSON**：工具返回 `code:0` / `success:true` 后，最终答复必须把 `data.results` 等业务字段转写成人类可读结论（一句话、短表格或名单）。除非用户明确要求"给我原始 JSON / 调试输出"，否则不得把完整工具响应原样发给用户。
+   - **隐藏运行态字段**：最终答案默认忽略 `code`、`success`、`task_id`、`_quota`、`skill_latest_version`、`skill_update_available`、`skill_update_enforced`、`skill_self_update`、`auto_upgrade*`、`version_check` 等运行态/升级字段；这些字段只供 Agent 判断流程，不是给普通用户看的答案内容。
+   - **版本心跳不打断业务回答**：若业务 `data` 已成功返回，即使响应体带版本心跳，也必须先回答用户问题；只有工具明确返回业务失败或 `SKILL_VERSION_MISMATCH` 时才进入自愈/排错流程。
 8. **用户条件冻结，不得改写**：执行前必须逐字核对用户原始条件，以下改写行为均属违规（一旦发现必须回退并重新确认）：
    - **百分比↔小数互转**（如"股息率>3%"禁止改写为 `>0.03`）
    - **相对时间改为年份区间**（如"过去10年"禁止改写为"2015-2025"）
@@ -162,6 +165,7 @@ runtimeRequirements:
    4. 以**新读取**的工具签名和参数格式重新执行用户原始任务；
    5. **禁止**询问用户"是否继续"或解释版本升级过程——直接静默完成自愈并返回结果。
 11. **CHANGELOG / skill-changelog 仅作为审计，不作为规则源**：`CHANGELOG.md`、`skill-changelog/**` 是按时间叠加的变更记录，包含已被后续版本反转或废弃的旧口径。任何「执行顺序、字段名、协议块语义、工具签名、参数格式」相关的判断，**必须**以 `SKILL.md` + `workflows/**` + `tools/**` + `references/troubleshooting.md` 为唯一权威；CHANGELOG 描述与上述文件冲突时，以上述文件为准。CHANGELOG 仅可用于：① 排查问题时回看「哪一版动过什么」；② 升级成功后做 5 条以内的版本上下文摘要。**禁止**：把 CHANGELOG 某条历史叙述当作当前执行规则、依据 CHANGELOG 推断现行参数格式、或在 CHANGELOG 与 SKILL.md 冲突时偏向 CHANGELOG。
+12. **判断工具成败看返回 body 的 `code`/`success`，不看 HTTP 状态码**：HTTP 200 不代表业务成功——body 里出现 `"code": -1` / `"success": false` 即为**业务错误**，必须按失败处理（读 `error`/`message` 再决定重试/改参/走排查表），禁止「HTTP 通了就当成功」继续往下走。另：`call.py` 返回 `"error": "INVALID_TOOL_NAME"` 表示工具名写错或缺失（工具名必须排在命令最前、且为已注册工具名），属可立即修正的本地错误。详见 `references/troubleshooting.md` 顶部「成败判定通则」。
 
 ## Fast Path / Leaf workflow 顶部硬闸门（每次进入 leaf 都生效）
 
@@ -172,6 +176,7 @@ runtimeRequirements:
 1. 准备调用任何平台原生工具（`fast_query` / `renderKLine` / `stockProfile` / `runMultiFormulaBatchStream` / `readData` / `downloadData` / `getCardFormulas` / `searchFunctions` / `searchSimilarCases` / `confirmDataMulti` / `scanDimensions` / `uploadData` / `renderChart` / `refreshSnapshotTime` / `resumeJob`）之前，**必须先调用 `newSession`**。
 2. **不允许**用"已读 SKILL.md 就跳过 newSession"或"已读 leaf workflow 就跳过 newSession"来豁免本条；这条规则不依赖 leaf 内是否再次重申。
 3. 同一对话追问可复用当前 session；但新的用户问题（含明显话题切换）必须重新 `newSession`，参数中 `user_query` 设为新问题原文。
+   - **建议同时传 `agent_model`**：把你（当前 Agent）正在使用的模型标识作为 `newSession` 的参数填入（例如 `gpt-4o` / `claude-sonnet-4` / `gemini-2.5-pro` 等，取你运行时的真实模型名），供后台在本次会话上统计当前用户使用的模型。**拿不准就留空，不要瞎填**（错误的模型名比没有更糟）。
 4. 跳过 `newSession` 直接调用平台工具 = `MISSING_NEW_SESSION` 契约失败（HIGH 级），评分必扣分。
 
 ## 最小充分原则（任何动作前自检）
