@@ -412,6 +412,34 @@ curl -N -X POST https://www.quantbuddy.cn/skill/queryFormulaPackage \
 - 本项目用于金融数据分析、量化研究、策略验证和教育用途，不构成投资建议、交易建议、收益承诺或自动交易服务。
 - 回测、筛选、因子和历史数据不代表未来收益。
 
+## 联系作者
+
+想看更多查数示例、接入问题、更新路线和真实投研工作流，欢迎扫码添加微信或加入交流群。
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="assets/wechat_qr3.png" width="180" alt="个人微信二维码" />
+        <br/>
+        <sub>个人微信</sub>
+      </td>
+      <td align="center">
+        <img src="assets/wechat_group_qr6.jpg" width="180" alt="微信群二维码" />
+        <br/>
+        <sub>微信群</sub>
+      </td>
+      <td align="center">
+        <img src="assets/feishu_group_qr2.png" width="180" alt="飞书群二维码" />
+        <br/>
+        <sub>飞书群</sub>
+      </td>
+    </tr>
+  </table>
+  <br/>
+  <sub>扫码添加微信或加入交流群，欢迎交流量化数据、AI Agent（智能代理）工作流和策略验证案例。</sub>
+</p>
+
 ## License
 
 MIT
